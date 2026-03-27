@@ -1,0 +1,106 @@
+# autoresearch (Wolfram Language)
+
+This is an experiment to have the LLM do its own research.
+
+## Setup
+
+To set up a new experiment, work with the user to:
+
+1. **Agree on a run tag**: propose a tag based on today's date (e.g. `mar5`). The branch `autoresearch/<tag>` must not already exist — this is a fresh run.
+2. **Create the branch**: `git checkout -b autoresearch/<tag>` from current master.
+3. **Read the in-scope files**: The repo is small. Read these files for full context:
+   - `README.md` — repository context.
+   - `prepare.wl` — fixed constants, data generation, and evaluation. Do not modify.
+   - `train.wl` — the file you modify. Training algorithm, hyperparameters, feature engineering.
+4. **Initialize results.tsv**: Create `results.tsv` with just the header row. The baseline will be recorded after the first run.
+5. **Confirm and go**: Confirm setup looks good.
+
+Once you get confirmation, kick off the experimentation.
+
+## Experimentation
+
+Each experiment runs locally. The training script runs for a **fixed time budget** (defined in `prepare.wl`). You launch it simply as: `wolframscript -file train.wl`.
+
+**What you CAN do:**
+- Modify `train.wl` — this is the only file you edit. Everything is fair game: algorithm, optimizer, hyperparameters, feature engineering, closed-form solutions, regularization, etc.
+
+**What you CANNOT do:**
+- Modify `prepare.wl`. It is read-only. It contains the fixed evaluation, data generation, and training constants (time budget, etc).
+- Install new packages or add dependencies. You can only use built-in Wolfram Language functions.
+- Modify the evaluation harness. The `evaluateMSE` function in `prepare.wl` is the ground truth metric.
+
+**The goal is simple: get the lowest val_mse.** Since the time budget is fixed, you don't need to worry about training time. Everything is fair game: change the algorithm, the optimizer, the hyperparameters, the feature engineering. The only constraint is that the code runs without crashing and finishes within the time budget.
+
+**Simplicity criterion**: All else being equal, simpler is better. A small improvement that adds ugly complexity is not worth it. Conversely, removing something and getting equal or better results is a great outcome — that's a simplification win. When evaluating whether to keep a change, weigh the complexity cost against the improvement magnitude. A 0.001 val_mse improvement that adds 20 lines of hacky code? Probably not worth it. A 0.001 val_mse improvement from deleting code? Definitely keep. An improvement of ~0 but much simpler code? Keep.
+
+**The first run**: Your very first run should always be to establish the baseline, so you will run the training script as is.
+
+## Output format
+
+Once the script finishes it prints a summary like this:
+
+```
+---
+val_mse:          0.246571
+training_seconds: 0.0
+num_iterations:   1000
+weights:          {3.01, 6.98, -1.99, 0.51, 4.02}
+bias:             -2.013077
+```
+
+You can extract the key metric from the log file:
+
+```
+grep "^val_mse:" run.log
+```
+
+## Logging results
+
+When an experiment is done, log it to `results.tsv` (tab-separated, NOT comma-separated — commas break in descriptions).
+
+The TSV has a header row and 4 columns:
+
+```
+commit	val_mse	status	description
+```
+
+1. git commit hash (short, 7 chars)
+2. val_mse achieved (e.g. 0.246571) — use 0.000000 for crashes
+3. status: `keep`, `discard`, or `crash`
+4. short text description of what this experiment tried
+
+Example:
+
+```
+commit	val_mse	status	description
+a1b2c3d	0.246571	keep	baseline
+b2c3d4e	0.244000	keep	increase learning rate
+c3d4e5f	0.250000	discard	add L1 regularization
+d4e5f6g	0.000000	crash	typo in gradient computation
+```
+
+## The experiment loop
+
+The experiment runs on a dedicated branch (e.g. `autoresearch/mar5`).
+
+LOOP FOREVER:
+
+1. Look at the git state: the current branch/commit we're on
+2. Tune `train.wl` with an experimental idea by directly hacking the code.
+3. git commit
+4. Run the experiment: `wolframscript -file train.wl > run.log 2>&1` (redirect everything — do NOT use tee or let output flood your context)
+5. Read out the results: `grep "^val_mse:" run.log`
+6. If the grep output is empty, the run crashed. Run `tail -n 50 run.log` to read the error and attempt a fix. If you can't get things to work after more than a few attempts, give up.
+7. Record the results in the tsv (NOTE: do not commit the results.tsv file, leave it untracked by git)
+8. If val_mse improved (lower), you "advance" the branch, keeping the git commit
+9. If val_mse is equal or worse, you git reset back to where you started
+
+The idea is that you are a completely autonomous researcher trying things out. If they work, keep. If they don't, discard. And you're advancing the branch so that you can iterate. If you feel like you're getting stuck in some way, you can rewind but you should probably do this very very sparingly (if ever).
+
+**Timeout**: Each experiment should finish in seconds for this problem. If a run exceeds the time budget by more than 2x, kill it and treat it as a failure (discard and revert).
+
+**Crashes**: If a run crashes, use your judgment: If it's something dumb and easy to fix (e.g. a typo, a wrong function name), fix it and re-run. If the idea itself is fundamentally broken, just skip it, log "crash" as the status in the tsv, and move on.
+
+**NEVER STOP**: Once the experiment loop has begun (after the initial setup), do NOT pause to ask the human if you should continue. Do NOT ask "should I keep going?" or "is this a good stopping point?". The human might be asleep, or gone from a computer and expects you to continue working *indefinitely* until you are manually stopped. You are autonomous. If you run out of ideas, think harder — re-read the in-scope files for new angles, try combining previous near-misses, try more radical approaches. The loop runs until the human interrupts you, period.
+
+As an example use case, a user might leave you running while they sleep. Since each experiment runs in seconds, you can run hundreds of experiments overnight. The user then wakes up to experimental results, all completed by you while they slept!
