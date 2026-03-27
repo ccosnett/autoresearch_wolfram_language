@@ -6,7 +6,7 @@ Wolfram Language port of [Karpathy's autoresearch](https://github.com/karpathy/a
   <img src="autoresearch_diagram.svg" width="500" alt="autoresearch diagram">
 </p>
 
-## Usage
+## Quick start
 
 ```bash
 claude --dangerously-skip-permissions
