@@ -31,17 +31,18 @@ noiseStd = 0.5;
 (* Data generation (deterministic)                                             *)
 (* --------------------------------------------------------------------------- *)
 
-generateData[] := Module[{xAll, yAll, xTrain, xVal, yTrain, yVal},
+generateData[] := Module[{xAll, yAll},
   BlockRandom[
     SeedRandom[seed];
     xAll = RandomVariate[NormalDistribution[], {nTrain + nVal, nFeatures}];
     yAll = xAll . trueWeights + trueBias + RandomVariate[NormalDistribution[], nTrain + nVal] * noiseStd;
   ];
-  xTrain = xAll[[;; nTrain]];
-  xVal = xAll[[nTrain + 1 ;;]];
-  yTrain = yAll[[;; nTrain]];
-  yVal = yAll[[nTrain + 1 ;;]];
-  <|"xTrain" -> xTrain, "yTrain" -> yTrain, "xVal" -> xVal, "yVal" -> yVal|>
+  <|
+    "xTrain" -> xAll[[;; nTrain]],
+    "yTrain" -> yAll[[;; nTrain]],
+    "xVal" -> xAll[[nTrain + 1 ;;]],
+    "yVal" -> yAll[[nTrain + 1 ;;]]
+  |>
 ];
 
 (* Cache so repeated loads don't regenerate *)
@@ -68,13 +69,15 @@ evaluateMSE[predictions_, yTrue_] := Module[{preds, targets},
 (* Main - run to verify data generation                                        *)
 (* --------------------------------------------------------------------------- *)
 
-If[Length[$ScriptCommandLine] > 0 && StringContainsQ[First[$ScriptCommandLine], "prepare"],
-  Module[{data, xTrain, yTrain, xVal, yVal, meanPred, baselineMSE},
+(* Equivalent to Python's if __name__ == "__main__": — only runs when executed directly,
+   not when loaded via Get["prepare.wl"] from another script. *)
+If[
+  Length[$ScriptCommandLine] > 0 && StringContainsQ[First[$ScriptCommandLine], "prepare"],
+  Module[{data, yTrain, baselineMSE, fmt},
     data = getData[];
-    xTrain = data["xTrain"];
     yTrain = data["yTrain"];
-    xVal = data["xVal"];
-    yVal = data["yVal"];
+    baselineMSE = evaluateMSE[ConstantArray[Mean[yTrain], nVal]];
+    fmt[x_] := ToString[NumberForm[x, 6]];
 
     Print["Linear regression toy problem"];
     Print["  Features:    ", nFeatures];
@@ -83,16 +86,14 @@ If[Length[$ScriptCommandLine] > 0 && StringContainsQ[First[$ScriptCommandLine], 
     Print["  Noise std:   ", noiseStd];
     Print["  Time budget: ", timeBudget, "s"];
     Print[];
-    Print["  xTrain dims: ", Dimensions[xTrain]];
-    Print["  yTrain range: [", ToString[NumberForm[Min[yTrain], 6]], ", ", ToString[NumberForm[Max[yTrain], 6]], "]"];
-    Print["  xVal dims:   ", Dimensions[xVal]];
-    Print["  yVal range:  [", ToString[NumberForm[Min[yVal], 6]], ", ", ToString[NumberForm[Max[yVal], 6]], "]"];
+    Print["  xTrain dims: ", Dimensions[data["xTrain"]]];
+    Print["  yTrain range: [", fmt[Min[yTrain]], ", ", fmt[Max[yTrain]], "]"];
+    Print["  xVal dims:   ", Dimensions[data["xVal"]]];
+    Print["  yVal range:  [", fmt[Min[data["yVal"]]], ", ", fmt[Max[data["yVal"]]], "]"];
     Print[];
 
     (* Baseline: predict mean of training targets *)
-    meanPred = ConstantArray[Mean[yTrain], nVal];
-    baselineMSE = evaluateMSE[meanPred];
-    Print["  Baseline MSE (predict mean): ", ToString[NumberForm[baselineMSE, 6]]];
+    Print["  Baseline MSE (predict mean): ", fmt[baselineMSE]];
     Print[];
     Print["Ready to train. Run: wolframscript -file train.wl"];
   ];
