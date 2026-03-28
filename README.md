@@ -17,3 +17,16 @@ Then ask it:
 ```
 Hi have a look at program.md and let's kick off a new experiment! let's do the setup first.
 ```
+
+## Assumptions
+
+This repo assumes you:
+
+- already have `wolframscript` installed and available on your command line
+- already know how to run `wolframscript` from a terminal
+- already have a local Wolfram kernel available for `wolframscript` to use
+
+Official Wolfram docs:
+
+- Install WolframScript: https://reference.wolfram.com/language/workflow/InstallWolframScript.html
+- `wolframscript` command-line reference: https://reference.wolfram.com/language/ref/program/wolframscript.html

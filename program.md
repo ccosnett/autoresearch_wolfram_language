@@ -7,12 +7,12 @@ This is an experiment to have the LLM do its own research.
 To set up a new experiment, work with the user to:
 
 1. **Agree on a run tag**: propose a tag based on today's date (e.g. `mar5`). The branch `autoresearch/<tag>` must not already exist — this is a fresh run.
-2. **Create the branch**: `git checkout -b autoresearch/<tag>` from current master.
+2. **Create the branch**: `git checkout -b autoresearch/<tag>` from current `main`.
 3. **Read the in-scope files**: The repo is small. Read these files for full context:
    - `README.md` — repository context.
    - `prepare.wl` — fixed constants, data generation, and evaluation. Do not modify.
    - `train.wl` — the file you modify. Training algorithm, hyperparameters, feature engineering.
-4. **Initialize results.tsv**: Create `results.tsv` with just the header row. The baseline will be recorded after the first run.
+4. **Initialize results.tsv**: Create `results.tsv` with just the header row. The baseline will be recorded after the first run. This file stays local and is ignored by git.
 5. **Confirm and go**: Confirm setup looks good.
 
 Once you get confirmation, kick off the experimentation.
@@ -88,10 +88,10 @@ LOOP FOREVER:
 1. Look at the git state: the current branch/commit we're on
 2. Tune `train.wl` with an experimental idea by directly hacking the code.
 3. git commit
-4. Run the experiment: `wolframscript -file train.wl > run.log 2>&1` (redirect everything — do NOT use tee or let output flood your context)
+4. Run the experiment: `wolframscript -file train.wl > run.log 2>&1` (redirect everything — do NOT use tee or let output flood your context). This log file stays local and is ignored by git.
 5. Read out the results: `grep "^val_mse:" run.log`
 6. If the grep output is empty, the run crashed. Run `tail -n 50 run.log` to read the error and attempt a fix. If you can't get things to work after more than a few attempts, give up.
-7. Record the results in the tsv (NOTE: do not commit the results.tsv file, leave it untracked by git)
+7. Record the results in the tsv (NOTE: do not commit the `results.tsv` file; it stays untracked by git)
 8. If val_mse improved (lower), you "advance" the branch, keeping the git commit
 9. If val_mse is equal or worse, you git reset back to where you started
 
