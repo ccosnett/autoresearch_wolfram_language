@@ -5,16 +5,19 @@
 
   Usage:
       wolframscript -file train.wl
+      (* or paste into a notebook in the same directory and evaluate *)
 *)
 
-(* Load the fixed data/evaluation harness from the same directory as this script. *)
-scriptDirectory = If[
+resolveBaseDirectory[] := Which[
   StringQ[$InputFileName] && $InputFileName =!= "",
   DirectoryName[ExpandFileName[$InputFileName]],
+  $FrontEnd =!= Null,
+  Quiet[Check[NotebookDirectory[], Directory[]]],
+  True,
   Directory[]
 ];
 
-Get[FileNameJoin[{scriptDirectory, "prepare.wl"}]];
+Get[FileNameJoin[{resolveBaseDirectory[], "prepare.wl"}]];
 
 (* --------------------------------------------------------------------------- *)
 (* Hyperparameters                                                              *)
@@ -40,7 +43,7 @@ formatVector[vec_, decimals_: 6] :=
 (* Training and evaluation                                                     *)
 (* --------------------------------------------------------------------------- *)
 
-Module[
+runTraining[] := Module[
   {
     data, xTrain, yTrain, xVal, nSamples, nFeaturesLocal,
     weights, bias, tStart, completedIterations = 0,
@@ -99,3 +102,7 @@ Module[
   Print["weights:          ", formatVector[weights]];
   Print["bias:             ", formatNumber[bias, 6]];
 ];
+
+runTrainingQ[] := StringQ[$InputFileName] && $InputFileName =!= "" || $FrontEnd =!= Null;
+
+If[runTrainingQ[], runTraining[]];
