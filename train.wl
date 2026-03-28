@@ -98,4 +98,4 @@ runTraining[] := Module[
   Print["bias:             ", formatNumber[bias, 6]];
 ];
 
-If[($InputFileName =!= "") || ($FrontEnd =!= Null), runTraining[]];
+runTraining[];
