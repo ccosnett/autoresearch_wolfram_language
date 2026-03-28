@@ -39,63 +39,53 @@ formatVector[vec_, decimals_: 6] :=
 (* Training and evaluation                                                     *)
 (* --------------------------------------------------------------------------- *)
 
-runTraining[] := Module[
-  {
-    data, xTrain, yTrain, xVal, nSamples,
-    weights, bias, tStart, completedIterations = 0,
-    yPred, error, gradWeights, gradBias, trainMSE,
-    trainingTime, valPredictions, valMSE
-  },
+data = getData[];
+xTrain = data["xTrain"];
+yTrain = data["yTrain"];
+xVal = data["xVal"];
 
-  data = getData[];
-  xTrain = data["xTrain"];
-  yTrain = data["yTrain"];
-  xVal = data["xVal"];
+nSamples = Length @ xTrain;
+weights = ConstantArray[0., Length @ First @ xTrain];
+bias = 0.;
+completedIterations = 0;
 
-  nSamples = Length @ xTrain;
-  weights = ConstantArray[0., Length @ First @ xTrain];
-  bias = 0.;
+tStart = AbsoluteTime[];
 
-  tStart = AbsoluteTime[];
-
-  Do[
-    If[AbsoluteTime[] - tStart > timeBudget,
-      Break[];
-    ];
-
-    yPred = xTrain . weights + bias;
-    error = yPred - yTrain;
-
-    gradWeights = (2. / nSamples) * (Transpose[xTrain] . error);
-    gradBias = (2. / nSamples) * Total[error];
-
-    weights -= learningRate * gradWeights;
-    bias -= learningRate * gradBias;
-    completedIterations = i;
-
-    If[Divisible[i, 100],
-      trainMSE = Mean[error^2];
-      Print[
-        "step ",
-        IntegerString[i, 10, 5],
-        " | train_mse: ",
-        formatNumber[trainMSE, 6]
-      ];
-    ];
-  ,
-    {i, numIterations}
+Do[
+  If[AbsoluteTime[] - tStart > timeBudget,
+    Break[];
   ];
 
-  trainingTime = AbsoluteTime[] - tStart;
-  valPredictions = xVal . weights + bias;
-  valMSE = evaluateMSE[valPredictions];
+  yPred = xTrain . weights + bias;
+  error = yPred - yTrain;
 
-  Print["---"];
-  Print["val_mse:          ", formatNumber[valMSE, 6]];
-  Print["training_seconds: ", formatNumber[trainingTime, 1]];
-  Print["num_iterations:   ", completedIterations];
-  Print["weights:          ", formatVector[weights]];
-  Print["bias:             ", formatNumber[bias, 6]];
+  gradWeights = (2. / nSamples) * (Transpose[xTrain] . error);
+  gradBias = (2. / nSamples) * Total[error];
+
+  weights -= learningRate * gradWeights;
+  bias -= learningRate * gradBias;
+  completedIterations = i;
+
+  If[Divisible[i, 100],
+    trainMSE = Mean[error^2];
+    Print[
+      "step ",
+      IntegerString[i, 10, 5],
+      " | train_mse: ",
+      formatNumber[trainMSE, 6]
+    ];
+  ];
+,
+  {i, numIterations}
 ];
 
-runTraining[];
+trainingTime = AbsoluteTime[] - tStart;
+valPredictions = xVal . weights + bias;
+valMSE = evaluateMSE[valPredictions];
+
+Print["---"];
+Print["val_mse:          ", formatNumber[valMSE, 6]];
+Print["training_seconds: ", formatNumber[trainingTime, 1]];
+Print["num_iterations:   ", completedIterations];
+Print["weights:          ", formatVector[weights]];
+Print["bias:             ", formatNumber[bias, 6]];
