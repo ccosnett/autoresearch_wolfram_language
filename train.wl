@@ -27,13 +27,13 @@ numIterations = 1000;
 (* --------------------------------------------------------------------------- *)
 
 formatNumber[x_, decimals_] := ToString @ NumberForm[
-  N[x],
+  N @ x,
   {Infinity, decimals},
   NumberPadding -> {"", "0"}
 ];
 
 formatVector[vec_, decimals_: 6] :=
-  "{" <> StringRiffle[formatNumber[#, decimals] & /@ N[vec], ", "] <> "}";
+  "{" <> StringRiffle[formatNumber[#, decimals] & /@ N @ vec, ", "] <> "}";
 
 (* --------------------------------------------------------------------------- *)
 (* Training and evaluation                                                     *)
@@ -41,7 +41,7 @@ formatVector[vec_, decimals_: 6] :=
 
 runTraining[] := Module[
   {
-    data, xTrain, yTrain, xVal, nSamples, nFeaturesLocal,
+    data, xTrain, yTrain, xVal, nSamples,
     weights, bias, tStart, completedIterations = 0,
     yPred, error, gradWeights, gradBias, trainMSE,
     trainingTime, valPredictions, valMSE
@@ -52,10 +52,9 @@ runTraining[] := Module[
   yTrain = data["yTrain"];
   xVal = data["xVal"];
 
-  {nSamples, nFeaturesLocal} = Dimensions[xTrain];
-
-  weights = ConstantArray[0.0, nFeaturesLocal];
-  bias = 0.0;
+  nSamples = Length @ xTrain;
+  weights = ConstantArray[0., Length @ First @ xTrain];
+  bias = 0.;
 
   tStart = AbsoluteTime[];
 
@@ -67,14 +66,14 @@ runTraining[] := Module[
     yPred = xTrain . weights + bias;
     error = yPred - yTrain;
 
-    gradWeights = (2.0 / nSamples) * (Transpose[xTrain] . error);
-    gradBias = (2.0 / nSamples) * Total[error];
+    gradWeights = (2. / nSamples) * (Transpose[xTrain] . error);
+    gradBias = (2. / nSamples) * Total[error];
 
     weights -= learningRate * gradWeights;
     bias -= learningRate * gradBias;
     completedIterations = i;
 
-    If[Mod[i, 100] == 0,
+    If[Divisible[i, 100],
       trainMSE = Mean[error^2];
       Print[
         "step ",
@@ -99,6 +98,4 @@ runTraining[] := Module[
   Print["bias:             ", formatNumber[bias, 6]];
 ];
 
-runTrainingQ[] := StringQ[$InputFileName] && $InputFileName =!= "" || $FrontEnd =!= Null;
-
-If[runTrainingQ[], runTraining[]];
+If[($InputFileName =!= "") || ($FrontEnd =!= Null), runTraining[]];
