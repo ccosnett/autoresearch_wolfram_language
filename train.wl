@@ -8,13 +8,9 @@
       (* or paste into a notebook in the same directory and evaluate *)
 *)
 
-resolveBaseDirectory[] := Which[
-  StringQ[$InputFileName] && $InputFileName =!= "",
-  DirectoryName[ExpandFileName[$InputFileName]],
-  $FrontEnd =!= Null,
-  Quiet[Check[NotebookDirectory[], Directory[]]],
-  True,
-  Directory[]
+resolveBaseDirectory[] := DirectoryName @ Replace[
+  $InputFileName,
+  "" :> NotebookFileName[]
 ];
 
 Get[FileNameJoin[{resolveBaseDirectory[], "prepare.wl"}]];
