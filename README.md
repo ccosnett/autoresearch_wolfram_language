@@ -26,5 +26,5 @@ This repo assumes you:
 
 Official Wolfram docs:
 
-- Install WolframScript: https://reference.wolfram.com/language/workflow/InstallWolframScript.html
-- `wolframscript` command-line reference: https://reference.wolfram.com/language/ref/program/wolframscript.html
+- [Install WolframScript](https://reference.wolfram.com/language/workflow/InstallWolframScript.html)
+- [`wolframscript` command-line reference](https://reference.wolfram.com/language/ref/program/wolframscript.html)
